@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Streaming</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1, h2 {
+            color: #4A90E2;
+        }
+        .track-section {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        #tracklist,
+        #recommendations {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .track-container {
+            margin: 10px;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 10px;
+            width: 300px;
+        }
+        audio {
+            width: 100%;
+            outline: none;
+        }
+        audio::-webkit-media-controls-panel {
+            background-color: #4A90E2;
+            color: white;
+        }
+        audio::-webkit-media-controls-play-button,
+        audio::-webkit-media-controls-timeline {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Music Streaming Service</h1>
+    <div class="track-section">
+        <h2>Current Track</h2>
+        <div id="currentTrack"></div>
+    </div>
+
+    <div class="track-section">
+        <h2>Initial Tracks</h2>
+        <div id="tracklist"></div>
+    </div>
+
+    <div class="track-section">
+        <h2>Recommended Tracks</h2>
+        <div id="recommendations"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script>
+        const socket = io();  // Setup the WebSocket connection
+        let currentPlayingTrackId = null;
+
+        function sendPlayEvent(trackId) {
+            // Post request to play the track
+            fetch(`/play/${trackId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => console.log('Play event sent:', data))
+                .catch(error => console.error('Error sending play event:', error));
+        }
+
+        function setupAudioListeners() {
+            // Attach event listeners to all audio elements
+            const allAudioElements = document.querySelectorAll('audio');
+            allAudioElements.forEach(audio => {
+                audio.addEventListener('play', () => {
+                    const trackId = audio.getAttribute('data-track-id');
+                    currentPlayingTrackId = trackId;
+                    sendPlayEvent(trackId);
+                    updateCurrentTrack(audio);
+                });
+            });
+        }
+
+        function updateCurrentTrack(audio) {
+            const currentTrack = document.getElementById('currentTrack');
+            currentTrack.innerHTML = ''; // Clear current track
+            const clonedAudio = audio.cloneNode(true);
+            clonedAudio.play(); // Play cloned audio
+            currentTrack.appendChild(clonedAudio); // Display cloned audio
+        }
+
+        socket.on('new_recommendations', function(data) {
+            console.log('Received recommendations:', data);
+            const recommendations = document.getElementById('recommendations');
+            recommendations.innerHTML = ''; // Clear existing recommendations
+            data.recommendations.forEach(trackId => {
+                if (trackId !== currentPlayingTrackId) {
+                    const audioElement = document.createElement('audio');
+                    audioElement.setAttribute('data-track-id', trackId);
+                    audioElement.controls = true;
+
+                    const sourceElement = document.createElement('source');
+                    sourceElement.src = `/media/momo/UBUNTU 23_1/sample_3/000/${trackId.toString()}.mp3`;
+                    sourceElement.type = 'audio/mpeg';
+                    audioElement.appendChild(sourceElement);
+
+                    const trackContainer = document.createElement('div');
+                    trackContainer.classList.add('track-container');
+                    trackContainer.appendChild(audioElement);
+                    recommendations.appendChild(trackContainer);
+                }
+            });
+            setupAudioListeners(); // Re-apply listeners to new audio elements
+        });
+
+        fetch('/tracks')
+            .then(response => response.json())
+            .then(data => {
+                const tracklist = document.getElementById('tracklist');
+                data.forEach(track => {
+                    const audioElement = document.createElement('audio');
+                    audioElement.setAttribute('data-track-id', track.id);
+                    audioElement.controls = true;
+
+                    const sourceElement = document.createElement('source');
+                    sourceElement.src = `/media/momo/UBUNTU 23_1/sample_3/${track.folder}/${track.filename}`;
+                    sourceElement.type = 'audio/mpeg';
+                    audioElement.appendChild(sourceElement);
+
+                    const trackContainer = document.createElement('div');
+                    trackContainer.classList.add('track-container');
+                    trackContainer.appendChild(audioElement);
+                    tracklist.appendChild(trackContainer);
+                });
+                setupAudioListeners(); // Apply listeners to initial audio elements
+            })
+            .catch(error => console.error('Error loading tracks:', error));
+    </script>
+</body>
+</html>
+

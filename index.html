@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Streaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 20px;
             background-color: #f4f4f9;
@@ -14,10 +15,10 @@
         }
         h1, h2 {
             color: #4A90E2;
+            text-align: center;
         }
         .track-section {
             margin-bottom: 40px;
-            text-align: center;
         }
         #tracklist,
         #recommendations {
@@ -32,13 +33,20 @@
             border-radius: 8px;
             padding: 10px;
             width: 300px;
+            transition: transform 0.3s ease;
+        }
+        .track-container:hover {
+            transform: translateY(-5px);
         }
         audio {
             width: 100%;
             outline: none;
+            background-color: #4A90E2;
+            border-radius: 5px;
+            overflow: hidden;
         }
         audio::-webkit-media-controls-panel {
-            background-color: #4A90E2;
+            background-color: transparent;
             color: white;
         }
         audio::-webkit-media-controls-play-button,
@@ -51,7 +59,7 @@
     <h1>Music Streaming Service</h1>
     <div class="track-section">
         <h2>Current Track</h2>
-        <div id="currentTrack"></div>
+        <div id="currentTrack" style="text-align: center;"></div>
     </div>
 
     <div class="track-section">
@@ -70,7 +78,6 @@
         let currentPlayingTrackId = null;
 
         function sendPlayEvent(trackId) {
-            // Post request to play the track
             fetch(`/play/${trackId}`, { method: 'POST' })
                 .then(response => response.json())
                 .then(data => console.log('Play event sent:', data))
@@ -78,7 +85,6 @@
         }
 
         function setupAudioListeners() {
-            // Attach event listeners to all audio elements
             const allAudioElements = document.querySelectorAll('audio');
             allAudioElements.forEach(audio => {
                 audio.addEventListener('play', () => {
@@ -92,16 +98,16 @@
 
         function updateCurrentTrack(audio) {
             const currentTrack = document.getElementById('currentTrack');
-            currentTrack.innerHTML = ''; // Clear current track
+            currentTrack.innerHTML = '';
             const clonedAudio = audio.cloneNode(true);
-            clonedAudio.play(); // Play cloned audio
-            currentTrack.appendChild(clonedAudio); // Display cloned audio
+            clonedAudio.play();
+            currentTrack.appendChild(clonedAudio);
         }
 
         socket.on('new_recommendations', function(data) {
             console.log('Received recommendations:', data);
             const recommendations = document.getElementById('recommendations');
-            recommendations.innerHTML = ''; // Clear existing recommendations
+            recommendations.innerHTML = '';
             data.recommendations.forEach(trackId => {
                 if (trackId !== currentPlayingTrackId) {
                     const audioElement = document.createElement('audio');
@@ -119,7 +125,7 @@
                     recommendations.appendChild(trackContainer);
                 }
             });
-            setupAudioListeners(); // Re-apply listeners to new audio elements
+            setupAudioListeners();
         });
 
         fetch('/tracks')
@@ -141,10 +147,9 @@
                     trackContainer.appendChild(audioElement);
                     tracklist.appendChild(trackContainer);
                 });
-                setupAudioListeners(); // Apply listeners to initial audio elements
+                setupAudioListeners();
             })
             .catch(error => console.error('Error loading tracks:', error));
     </script>
 </body>
 </html>
-
